@@ -1,0 +1,11 @@
+{% extends "parent.html"%}
+{% block icerik%}
+<h1 class="page-title">Ana Sayfa</h1>
+<ul class="user-list">
+    {% for kullanici in users %}
+    <a href="{{ url_for('private_chat', target_user_id=kullanici.telfonNo) }}">
+        <li class="user-item">{{ kullanici.ad }} - {{ kullanici.telefonNo }}</li></a>
+    {% endfor %}
+    
+</ul>
+{% endblock %}
