@@ -16,7 +16,7 @@ firebaseConfig = {
 
 fire = pyrebase.initialize_app(firebaseConfig)
 
-cred = credentials.Certificate("flask-chats-firebase-adminsdk-8de6x-6de76fc8ee.json") 
+cred = credentials.Certificate("flask-chats-firebase-adminsdk-8de6x-9b1afa0363.json") 
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 tum_kullanicilar = db.collection("users").get()

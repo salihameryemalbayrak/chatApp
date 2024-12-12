@@ -12,7 +12,10 @@ import random
 app = Flask (__name__)
 app.config["SECRET_KEY"] = '5a46fc92d36e604f423286c04875437f' 
 dogrulama = fire.auth()
+socketio = SocketIO(app)
 
+users = {}  #veritabanında olmalı
+rooms = {}  #veritabanında olmalı
 active_users = {} 
 room_active_users = {} 
 
@@ -70,7 +73,7 @@ def kayitOl():
             session['last_activity'] = time.time()
             session["telefonNo"] = telefon
             session["kullaniciAdi"] = kullaniciAdi
-            return redirect(url_for('home', user_id=uye_id))
+            return redirect(url_for('home'))
         
         except Exception as e:
             flash("Bir hata oluştu. Lütfen daha sonra tekrar deneyin.", "error")
@@ -80,23 +83,23 @@ def kayitOl():
 @app.route("/Login",methods =["GET","POST"] )
 def login():
     form2 = LoginForm()
-    if form2.validate_on_submit():
-        email = form2.Eposta.data
-        sifre = form2.sifre.data
-        telefonNo= form2.telefonNo.data   ##veritabanından almam gerek
-        kullaniciAdi =form2.kullaniciAdi
 
+    if form2.validate_on_submit():                   #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        email = form2.Eposta.data
+        sifre = form2.sifre.data                                #kullanici adi ve tel noyu almaaa
+      #  telefonNo = db.collection("users").document(user['localId']).get().to_dict().get('telefonNo')       #sessiona eklemem gerek
+       # kullaniciAdi = db.collection("users").document(user['localId']).get().to_dict().get('kullaniciAdi')
         try:
             user = dogrulama.sign_in_with_email_and_password(email, sifre)
             if user:
                 print(f"Giriş başarılı. Kullanıcı ID: {user['localId']}") # terminalde yazdırılacak
                 session['user_id'] = user['localId']
                 session['email'] = email
-                session["telefonNo"] = telefonNo       #sessiona eklemem gerek
-                session["kullaniciAdi"] = kullaniciAdi
+                session['telefonNo'] = db.collection("users").document(user['localId']).get().to_dict().get('telefonNo')       #sessiona eklemem gerek
+                session['kullaniciAdi'] = db.collection("users").document(user['localId']).get().to_dict().get('kullaniciAdi')
                 session['last_activity'] = time.time()
-                flash("Giriş başarılı.", "success")
-                return redirect(url_for('home', user_id = user['localId']))  
+                flash("Giriş başarılı.!", "success")
+                return redirect(url_for('home'))  
             else:
                 flash("Giriş bilgileri yanlış. Lütfen tekrar deneyin.", "error")
         except Exception as e:
@@ -120,8 +123,13 @@ def sifremiunuttum():
 @app.route("/home",methods=["GET","POST"])
 def home():
 
-    user_id = request.args.get('user_id')
-    print(f"hello {user_id}")
+    #user_id = request.args.get('user_id')
+    #print(f"hello {user_id}")
+   # telefonNo = session[telefonNo]
+   # kullaniciAdi = session[kullaniciAdi]
+    kullanici_adi = session.get("kullaniciAdi", "Bilinmeyen Kullanıcı")
+    telefon_no = session.get("telefonNo", "Telefon Numarası Yok")
+    print(f"Kullanıcı Adı: {kullanici_adi}, Telefon No: {telefon_no}")
 
     # if not user_id:
     #     flash("Geçersiz kullanıcı ID'si.", "error")
@@ -147,14 +155,15 @@ def home():
         flash("Bir hata oluştu. Lütfen daha sonra tekrar deneyin.", "error")
         return redirect(url_for("kayitOl"))
     
-@app.route("/private_chat/<target_user_id>")
-def private_chat(target_user_id):
+@app.route("/private_chat/<target_user_id>/<target_username>")
+def private_chat(target_user_id, target_username):
     room_id = f"{min(session['telefonNo'], target_user_id)}-{max(session['telefonNo'], target_user_id)}"
-    if room_id not in rooms:
-        rooms[room_id] = []
+    if room_id not in rooms:        #odayı veritabanına ekleme !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        rooms[room_id] = []            
 
     session["room_id"] = room_id
-    target_username = users[target_user_id]["username"]
+    #target_username =users[target_user_id]["username"]          #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! karşı taraf kullanıcının ismine ulaşmam lazım
+    #target_username = db.collection("users").document(user['localId']).get().to_dict().get('kullaniciAdi')
     messages = rooms[room_id]
     return render_template("private_chat.html", room_id=room_id, messages=messages, target_user=target_username)
     
@@ -166,7 +175,7 @@ def handle_request_users():
     
 @socketio.on("connect")
 def handle_connect():
-    user_id = session.get("user_id")   ##veritabanından alınacak
+    user_id = session.get("telefonNo")                          ##veritabanından alınacak
     username = session.get("kullaniciAdi")
     if user_id and username:
         active_users[user_id] = username
@@ -257,26 +266,28 @@ def on_join():
         if message["receiver"] == user_id and message["status"] != "Görüldü":
                     message["status"] = "Görüldü"                                            ##mesaj durumu güncellenecek
                     socketio.emit("message_status_update", message, room=room_id)
+
+
 @socketio.on("broadcast_message")
 def handle_broadcast_message(data):
     message_data = {
-        "name": session["username"],
+        "name": session["kullaniciAdi"],
         "receiver":active_users,  
         "message": data["message"],                                           ##mesaj burada veritabanına alınacak gönderici ve alıcı bilgisiyle beraber
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "status": ""
     }
     for user_id in active_users:
-        room_id = f"{min(session['user_id'], user_id)}-{max(session['user_id'], user_id)}"
-        rooms.setdefault(room_id, []).append(message_data)
+        room_id = f"{min(session['telefonNo'], user_id)}-{max(session['telefonNo'], user_id)}"
+        rooms.setdefault(room_id, []).append(message_data)               ##rooms veritabanından geleck
         socketio.emit("message", message_data, room=room_id)
 
-@app.route("/logout")
+@app.route("/logout")                   #çıkış yapınca çalıştırılmalı
 def logout():
-    user_id = session.get("user_id")
+    user_id = session.get("telefonNo")
     if user_id:
-        session.pop("user_id", None)
-        session.pop("username", None)
+        session.pop("telefonNo", None)
+        session.pop("kullaniciAdi", None)
         active_users.pop(user_id, None)
         socketio.emit("active_users", active_users)
     return redirect(url_for("home"))        

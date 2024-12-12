@@ -86,10 +86,10 @@
     </style>
 </head>
 <body>
-    <div id="chat-container">             <!-- bu kısımda mesajların ekrana yazılması sessiondan değil veritabanından olacak-->
+    <div id="chat-container">            
         <h2>{{ target_user }}</h2>
         <div id="chat">
-            {% for message in messages %}
+            {% for message in messages %}         <!-- bu kısımda mesajların ekrana yazılması sessiondan değil veritabanından olacak-->
             <div class="message">
                 <div class="message-content">
                     <strong>{{ message.name }}</strong> <!-- Adı üstte göster -->
@@ -143,7 +143,7 @@
                 if (timestamp === `at ${data.timestamp}`) {
                     const currentStatus = $(this).find(".status").text();
                     
-                    // Eğer mevcut durum "Görüldü" ise, durumu değiştirme
+                    // Eğer mevcut durum "Görüldü" ise, durumu değiştirme        //veritabanındaki göndeim durumu güncellenecek
                     if (currentStatus !== "Görüldü") {
                         $(this).find(".status").text(data.status);
                     }

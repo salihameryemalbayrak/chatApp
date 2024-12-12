@@ -3,9 +3,9 @@
 <h1 class="page-title">Ana Sayfa</h1>
 <ul class="user-list">
     {% for kullanici in users %}
-    <a href="{{ url_for('private_chat', target_user_id=kullanici.telfonNo) }}">
+    <a href="{{ url_for('private_chat', target_user_id=kullanici.telefonNo, target_username=kullanici.ad) }}">
         <li class="user-item">{{ kullanici.ad }} - {{ kullanici.telefonNo }}</li></a>
     {% endfor %}
     
 </ul>
-{% endblock %}
+{% endblock %} 
