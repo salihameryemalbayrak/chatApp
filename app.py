@@ -195,7 +195,11 @@ def handle_connect():
     if user_id and username:
         active_users[user_id] = username
         socketio.emit("active_users", active_users)
-       
+
+
+    
+
+    
     """    for room_id, messages in rooms.items():
             for message in messages:
                 if message["receiver"] == user_id and message["status"] != "iletildi":      ##mesaj durumu güncellemesi alıcısına göre mesaj durumunu değiştiriyo
@@ -264,9 +268,9 @@ def handle_message(data):
     ref.push(message_data)
     #rooms[room_id].append(message_data)     #mesajların veritabanınna eklenmesi
 
-   
+    
     send(message_data, to=room_id)
-    emit("message_status_update", message_data, to=room_id)
+    emit("message_status_update", ref.get(), to=room_id)
 
 
 @socketio.on("join")
@@ -286,6 +290,22 @@ def on_join():
     socketio.emit("room_active_users", room_active_users)
     #print("odada aktifler")
     #print(room_active_users)
+
+    ref= db.reference(f'rooms/{room_id}/message_data')  
+    messages_snapshot=ref.get()
+    
+    #print(messages_snapshot)
+    
+    if messages_snapshot:
+        for key, message in messages_snapshot.items():
+            # Eğer hedef kullanıcıya ait bir mesajsa status güncellenir
+            if message["receiver"] == user_id:
+                status_ref = db.reference(f'rooms/{room_id}/message_data/{key}')
+                status_ref.update({"status": "Görüldü"})
+                socketio.emit("message_status_update", messages_snapshot, room=room_id)
+    
+
+
 
     """
     for message in rooms[room_id]:
