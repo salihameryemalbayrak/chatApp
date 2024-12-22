@@ -1,6 +1,6 @@
 import pyrebase
 import firebase_admin
-from firebase_admin import credentials, firestore
+from firebase_admin import credentials, firestore, db
 
 firebaseConfig = {
     "apiKey": "AIzaSyAUesDUcgX8JKDvboFdcaN6j9ki5zwZ4QM",
@@ -17,6 +17,9 @@ firebaseConfig = {
 fire = pyrebase.initialize_app(firebaseConfig)
 
 cred = credentials.Certificate("flask-chats-firebase-adminsdk-8de6x-9b1afa0363.json") 
-firebase_admin.initialize_app(cred)
+#firebase_admin.initialize_app(cred)
+firebase_admin.initialize_app(cred, {
+    'databaseURL': 'https://flask-chats-default-rtdb.firebaseio.com/'  # Firebase Realtime Database URL
+})
 db = firestore.client()
 tum_kullanicilar = db.collection("users").get()

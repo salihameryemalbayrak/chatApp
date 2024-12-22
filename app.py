@@ -8,6 +8,8 @@ from flask import Flask, render_template, request, session, redirect, url_for
 from flask_socketio import join_room, leave_room, send, SocketIO, emit
 from datetime import datetime
 import random
+import firebase_admin
+from firebase_admin import credentials, db
 
 app = Flask (__name__)
 app.config["SECRET_KEY"] = '5a46fc92d36e604f423286c04875437f' 
@@ -227,10 +229,19 @@ def handle_message(data):
     message_data = {
         "name": session["kullaniciAdi"],
         "receiver": target_user_id,  
-        "message": data["message"],                                          
+        "message": data["message"],                                          ##tamaamen veritabanına bağlandığında bu kısım silinecek
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "status": "gönderildi"
     }
+    ref= db.reference(f'rooms/{room_id}/message_data')            
+    ref.push({
+        "sender": session["telefonNo"],
+        "receiver": target_user_id,  
+        "message": data["message"],                                          
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "status": "gönderildi"
+
+    })
 
      
     if target_user_id in active_users:                                           

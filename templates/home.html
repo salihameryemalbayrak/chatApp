@@ -4,7 +4,7 @@
 <ul class="user-list">
     {% for kullanici in users %}
     <a href="{{ url_for('private_chat', target_user_id=kullanici.telefonNo, target_username=kullanici.ad) }}">
-        <li class="user-item">{{ kullanici.ad }} - {{ kullanici.telefonNo }}</li></a>
+        <li class="user-item">{{ kullanici.ad }}</li></a>
     {% endfor %}
     
 </ul>
