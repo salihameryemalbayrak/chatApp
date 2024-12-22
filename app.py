@@ -2,7 +2,7 @@ from flask import Flask, flash , render_template,redirect, request, session, url
 import socketio
 from Forms import *
 import time
-from firebase_config22 import fire,db
+from firebase_config22 import fire, dbase
 import firebase_config22
 from flask import Flask, render_template, request, session, redirect, url_for
 from flask_socketio import join_room, leave_room, send, SocketIO, emit
@@ -16,7 +16,7 @@ app.config["SECRET_KEY"] = '5a46fc92d36e604f423286c04875437f'
 dogrulama = fire.auth()
 socketio = SocketIO(app)
 
-users = {}  #veritabanında olmalı
+#users = {}  #veritabanında olmalı
 rooms = {}  #veritabanında olmalı
 active_users = {} 
 room_active_users = {} 
@@ -70,7 +70,7 @@ def kayitOl():
                 "email": email 
             }
 
-            db.collection("users").document(uye_id).set(user_data) 
+            dbase.collection("users").document(uye_id).set(user_data) 
             flash("Kayıt başarılı! ", "success")
             session['last_activity'] = time.time()
             session["telefonNo"] = telefon
@@ -97,8 +97,8 @@ def login():
                 print(f"Giriş başarılı. Kullanıcı ID: {user['localId']}") # terminalde yazdırılacak
                 session['user_id'] = user['localId']
                 session['email'] = email
-                session['telefonNo'] = db.collection("users").document(user['localId']).get().to_dict().get('telefonNo')       #sessiona eklemem gerek
-                session['kullaniciAdi'] = db.collection("users").document(user['localId']).get().to_dict().get('kullaniciAdi')
+                session['telefonNo'] = dbase.collection("users").document(user['localId']).get().to_dict().get('telefonNo')       #sessiona eklemem gerek
+                session['kullaniciAdi'] = dbase.collection("users").document(user['localId']).get().to_dict().get('kullaniciAdi')
                 session['last_activity'] = time.time()
                 flash("Giriş başarılı.!", "success")
                 return redirect(url_for('home'))  
@@ -169,11 +169,11 @@ def private_chat(target_user_id, target_username):
     messages = rooms[room_id]
     return render_template("private_chat.html", room_id=room_id, messages=messages, target_user=target_username)
     
-@socketio.on("users")
+"""@socketio.on("users")
 def handle_request_users():
        
        socketio.emit("users", users)
-    
+    """
     
 @socketio.on("connect")
 def handle_connect():

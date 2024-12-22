@@ -21,5 +21,5 @@ cred = credentials.Certificate("flask-chats-firebase-adminsdk-8de6x-9b1afa0363.j
 firebase_admin.initialize_app(cred, {
     'databaseURL': 'https://flask-chats-default-rtdb.firebaseio.com/'  # Firebase Realtime Database URL
 })
-db = firestore.client()
-tum_kullanicilar = db.collection("users").get()
+dbase = firestore.client()
+tum_kullanicilar = dbase.collection("users").get()
