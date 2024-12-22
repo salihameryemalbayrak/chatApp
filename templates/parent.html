@@ -70,23 +70,10 @@
 
     
     socket.on("active_users", (activeUsers) => {
-        activeUsersList = Object.values(activeUsers); 
         
-        $("#users-list li").each(function() {
-            const userId = $(this).attr("id").replace("user-", "");
-            const username = $(this).find("a").text().trim(); 
-
-            if (activeUsersList.includes(username)) { 
-                if (!$(this).find(".status-dot").length) {
-                    const dot = document.createElement("span");
-                    dot.classList.add("status-dot");
-                    $(this).find("a").append(dot);
-                }
-            } else {
-               
-                $(this).find(".status-dot").hide();
-            }
-        });
+    });
+    socket.on("room_active_users", (room_active_users) => {
+        
     });
 
   

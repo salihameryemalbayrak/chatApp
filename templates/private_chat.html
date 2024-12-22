@@ -92,12 +92,12 @@
             {% for message in messages %}         <!-- bu kısımda mesajların ekrana yazılması sessiondan değil veritabanından olacak-->
             <div class="message">
                 <div class="message-content">
-                    <strong>{{ message.name }}</strong> <!-- Adı üstte göster -->
+                    <strong>{{ message.sender }}</strong> <!-- Adı üstte göster -->
                     <span>{{ message.message }}</span> <!-- Mesajın içeriğini altta göster -->
                 </div>
                 <div class="message-details">
                     <span class="timestamp">at {{ message.timestamp }}</span>
-                    {% if message.name != target_user %}
+                    {% if message.sender != target_user_id %}
                     <span class="status">{{ message.status }}</span>
                     {% endif %}
                 </div>
@@ -118,14 +118,14 @@
         socket.on("message", (data) => {
             let statusHTML = ''; // Durumu tutacak değişken
             // Eğer mesaj target_user'a aitse, status kısmını gizle
-            if (data.name !== "{{ target_user }}") {
+            if (data.sender !== "{{ target_user_id }}") {
                 statusHTML = `<span class="status">${data.status}</span>`;
             }
 
             $("#chat").append(`
                 <div class="message">
                     <div class="message-content">
-                        <strong>${data.name}</strong>
+                        <strong>${data.sender}</strong>
                         <span>${data.message}</span>
                     </div>
                     <div class="message-details">
@@ -142,7 +142,6 @@
                 const timestamp = $(this).find(".timestamp").text();
                 if (timestamp === `at ${data.timestamp}`) {
                     const currentStatus = $(this).find(".status").text();
-                    
                     // Eğer mevcut durum "Görüldü" ise, durumu değiştirme        //veritabanındaki göndeim durumu güncellenecek
                     if (currentStatus !== "Görüldü") {
                         $(this).find(".status").text(data.status);

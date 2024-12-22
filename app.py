@@ -160,14 +160,27 @@ def home():
 @app.route("/private_chat/<target_user_id>/<target_username>")
 def private_chat(target_user_id, target_username):
     room_id = f"{min(session['telefonNo'], target_user_id)}-{max(session['telefonNo'], target_user_id)}"
-    if room_id not in rooms:        #odayı veritabanına ekleme !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        rooms[room_id] = []            
-
     session["room_id"] = room_id
+    """if room_id not in rooms:        #odayı veritabanına ekleme !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        rooms[room_id] = []  
+      """
+    ref = db.reference(f'rooms/{room_id}/message_data')
+    data = ref.get()
+
+    n = []
+    if data:  # Eğer data boş değilse
+        for  key,value in data.items():  # Sözlüğün key ve value'larını dolaş
+            #print(value['message'])  # Mesajı yazdır
+            n.append(value)  # Tüm mesaj detaylarını listeye ekle
+
+    messages = n
+        
+
+    
     #target_username =users[target_user_id]["username"]          #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! karşı taraf kullanıcının ismine ulaşmam lazım
     #target_username = db.collection("users").document(user['localId']).get().to_dict().get('kullaniciAdi')
-    messages = rooms[room_id]
-    return render_template("private_chat.html", room_id=room_id, messages=messages, target_user=target_username)
+    #messages = rooms[room_id]
+    return render_template("private_chat.html", room_id=room_id, messages=messages, target_user=target_username,target_user_id=target_user_id)
     
 """@socketio.on("users")
 def handle_request_users():
@@ -183,11 +196,11 @@ def handle_connect():
         active_users[user_id] = username
         socketio.emit("active_users", active_users)
        
-        for room_id, messages in rooms.items():
+    """    for room_id, messages in rooms.items():
             for message in messages:
                 if message["receiver"] == user_id and message["status"] != "iletildi":      ##mesaj durumu güncellemesi alıcısına göre mesaj durumunu değiştiriyo
                     message["status"] = "İletildi"
-                    socketio.emit("message_status_update", message, room=room_id)    
+                    socketio.emit("message_status_update", message, room=room_id) """   
     print("tekrar baglandi")
 @socketio.on("disconnect")
 def handle_disconnect():
@@ -195,16 +208,20 @@ def handle_disconnect():
     room_id = session.get("room_id")
 
    ##eklendiğinde üstteki geri tuşu ile çıkış yapılıyor fakat o zaman da private chat sayfasından geri tuşuna basıldığında da çıktığı için mesaj atamıyor sayfa yeniden yüklenene kadar
-    """
+    
     if user_id in active_users:
-        active_users.pop(user_id)
-        socketio.emit("active_users", active_users)
-    """
+
+        #active_users.pop(user_id)
+        #room_active_users.pop(user_id)
+        room_active_users[room_id].remove(user_id)
+        socketio.emit("room_active_users", room_active_users)
+        #socketio.emit("active_users", active_users)
+    
     #böyle olunca da mesaj atan kişi geri çıktığı zaman kısa bir süre toplu mesaj atamıyor
 
-    if room_id and user_id in room_active_users.get(room_id, []):
-        room_active_users[room_id].remove(user_id)   
-    print("Bağlantı kesildi")  
+    """if room_id and user_id in room_active_users[room_id]:
+        room_active_users[room_id].remove(user_id)  """ 
+print("Bağlantı kesildi")  
 
 @socketio.on("message")
 def handle_message(data):
@@ -227,32 +244,25 @@ def handle_message(data):
 
     
     message_data = {
-        "name": session["kullaniciAdi"],
-        "receiver": target_user_id,  
-        "message": data["message"],                                          ##tamaamen veritabanına bağlandığında bu kısım silinecek
-        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "status": "gönderildi"
-    }
-    ref= db.reference(f'rooms/{room_id}/message_data')            
-    ref.push({
         "sender": session["telefonNo"],
         "receiver": target_user_id,  
         "message": data["message"],                                          
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "status": "gönderildi"
+    }
+  
 
-    })
-
-     
+    #print(active_users)
     if target_user_id in active_users:                                           
         message_data["status"] = "İletildi"         #veritabanı guncellenmeli
-    
-    
-    if target_user_id in room_active_users.get(room_id, []):               
+   
+    print(room_active_users[room_id])
+    if target_user_id in room_active_users[room_id]:               
         message_data["status"] = "Görüldü"                         #veritabanı guncellenmeli
 
-    
-    rooms[room_id].append(message_data)     #mesajların veritabanınna eklenmesi
+    ref= db.reference(f'rooms/{room_id}/message_data')            
+    ref.push(message_data)
+    #rooms[room_id].append(message_data)     #mesajların veritabanınna eklenmesi
 
    
     send(message_data, to=room_id)
@@ -262,7 +272,8 @@ def handle_message(data):
 @socketio.on("join")
 def on_join():
     room_id = session.get("room_id")          #emin değilim nerden alınmalı
-    user_id = session.get("kullaniciAdi")
+    user_id = session.get("telefonNo")
+
     if not room_id:
         return
     join_room(room_id)
@@ -270,13 +281,17 @@ def on_join():
     
     if room_id not in room_active_users:
         room_active_users[room_id] = []
-    room_active_users[room_id].append(user_id)
+    if user_id not in room_active_users[room_id]:
+        room_active_users[room_id].append(user_id)
+    socketio.emit("room_active_users", room_active_users)
+    #print("odada aktifler")
+    #print(room_active_users)
 
-    
+    """
     for message in rooms[room_id]:
         if message["receiver"] == user_id and message["status"] != "Görüldü":
                     message["status"] = "Görüldü"                                            ##mesaj durumu güncellenecek
-                    socketio.emit("message_status_update", message, room=room_id)
+                    socketio.emit("message_status_update", message, room=room_id)"""
 
 
 @socketio.on("broadcast_message")
