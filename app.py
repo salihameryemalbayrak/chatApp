@@ -1,4 +1,4 @@
-from flask import Flask, flash , render_template,redirect, request, session, url_for
+from flask import Flask, flash, jsonify , render_template,redirect, request, session, url_for
 import socketio
 from Forms import *
 import time
@@ -10,7 +10,7 @@ from datetime import datetime
 import random
 import firebase_admin
 from firebase_admin import credentials, db
-
+##LOCAL HOSTTAN DEĞİL IP ADRESİNDEN KULLANICAZöö
 app = Flask (__name__)
 app.config["SECRET_KEY"] = '5a46fc92d36e604f423286c04875437f' 
 dogrulama = fire.auth()
@@ -124,39 +124,44 @@ def sifremiunuttum():
 
 @app.route("/home",methods=["GET","POST"])
 def home():
-
-    #user_id = request.args.get('user_id')
-    #print(f"hello {user_id}")
-   # telefonNo = session[telefonNo]
-   # kullaniciAdi = session[kullaniciAdi]
+    
     kullanici_adi = session.get("kullaniciAdi", "Bilinmeyen Kullanıcı")
     telefon_no = session.get("telefonNo", "Telefon Numarası Yok")
     print(f"Kullanıcı Adı: {kullanici_adi}, Telefon No: {telefon_no}")
-
-    # if not user_id:
-    #     flash("Geçersiz kullanıcı ID'si.", "error")
-    #     return redirect(url_for("kayitOl"))
-    
+    user_ip = request.remote_addr
+    print("user ip is:--------------------")
+    print(user_ip)
     try:
-        
         kullaniciAdlari = [
-            {
-                "ad": doc.to_dict().get("kullaniciAdi", "Bilinmeyen Kullanıcı"),
-                "telefonNo": doc.to_dict().get("telefonNo", "Telefon Yok"),
-            }
-            for doc in firebase_config22.tum_kullanicilar
-        ]
+        {
+            "ad": doc.to_dict().get("kullaniciAdi", "Bilinmeyen Kullanıcı"),
+            "telefonNo": doc.to_dict().get("telefonNo", "Telefon Yok"),
+        }
+        for doc in firebase_config22.tum_kullanicilar
+        if doc.to_dict().get("telefonNo") != telefon_no  # Telefon numarası eşleşmeyenleri ekle
+            ]
+        arama = request.form.get('sea')  ######## Formdan gelen arama verisi
         
-        # Oturum kontrolü
+        if arama:
+            # arama yapılmışsa, kullaniciAdlari listesini filtrele 
+            kullaniciAdlari = [k for k in kullaniciAdlari if arama.lower() in k['ad'].lower() or arama in k['telefonNo']]
+
+        else : 
+            arama =""
+            # Oturum kontrolü
         result = check_session_timeout()
         if result:  
             return result
         
-        return render_template("home.html",  users = kullaniciAdlari )
+        return render_template("home.html",  users = kullaniciAdlari, ar =arama)
     except Exception as e:
+        print(e)
         flash("Bir hata oluştu. Lütfen daha sonra tekrar deneyin.", "error")
         return redirect(url_for("kayitOl"))
-    
+def listen_for_message_updates(room_id):
+    ref= db.reference(f'rooms/{room_id}')
+    ref.child('message').listen(private_chat()) 
+
 @app.route("/private_chat/<target_user_id>/<target_username>")
 def private_chat(target_user_id, target_username):
     room_id = f"{min(session['telefonNo'], target_user_id)}-{max(session['telefonNo'], target_user_id)}"
@@ -164,6 +169,8 @@ def private_chat(target_user_id, target_username):
     """if room_id not in rooms:        #odayı veritabanına ekleme !!!!!!!!!!!!!!!!!!!!!!!!!!!!
         rooms[room_id] = []  
       """
+    session["target_userid"] = target_user_id
+    session["target_username"] = target_username
     ref = db.reference(f'rooms/{room_id}/message_data')
     data = ref.get()
 
@@ -181,6 +188,10 @@ def private_chat(target_user_id, target_username):
     #target_username = db.collection("users").document(user['localId']).get().to_dict().get('kullaniciAdi')
     #messages = rooms[room_id]
     return render_template("private_chat.html", room_id=room_id, messages=messages, target_user=target_username,target_user_id=target_user_id)
+
+@socketio.on("join_room")
+def join(data):
+    join_room(data["room_id"])
     
 """@socketio.on("users")
 def handle_request_users():
@@ -195,7 +206,7 @@ def handle_connect():
     if user_id and username:
         active_users[user_id] = username
         socketio.emit("active_users", active_users)
-
+    
 
     
 
@@ -226,7 +237,7 @@ def handle_disconnect():
     """if room_id and user_id in room_active_users[room_id]:
         room_active_users[room_id].remove(user_id)  """ 
 print("Bağlantı kesildi")  
-
+"""
 @socketio.on("message")
 def handle_message(data):
     print("mesaj burdan gonderilmeye calisiliyor")
@@ -248,6 +259,7 @@ def handle_message(data):
 
     
     message_data = {
+        "sender_name":session["kullaniciAdi"],
         "sender": session["telefonNo"],
         "receiver": target_user_id,  
         "message": data["message"],                                          
@@ -259,6 +271,7 @@ def handle_message(data):
     #print(active_users)
     if target_user_id in active_users:                                           
         message_data["status"] = "İletildi"         #veritabanı guncellenmeli
+        
    
     print(room_active_users[room_id])
     if target_user_id in room_active_users[room_id]:               
@@ -271,8 +284,43 @@ def handle_message(data):
     
     send(message_data, to=room_id)
     emit("message_status_update", ref.get(), to=room_id)
+"""
+@socketio.on("message")
+def handle_message(data):
+    room_id = session.get("room_id")
+    if not room_id:
+        return
 
+    sender_user_id = session["telefonNo"]
+    user_ids = room_id.split("-")
+    target_user_id = user_ids[1] if user_ids[0] == sender_user_id else user_ids[0]
 
+    message_data = {
+        "sender_name": session["kullaniciAdi"],
+        "sender": sender_user_id,
+        "receiver": target_user_id,
+        "message": data["message"],
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "status": "gönderildi"
+    }
+
+    # Durumu iletildi/görüldü olarak güncelle
+    if target_user_id in active_users:
+        message_data["status"] = "İletildi"
+        
+    if target_user_id in room_active_users[room_id]:
+        message_data["status"] = "Görüldü"
+
+    # Mesajı veritabanına ekle
+    ref = db.reference(f'rooms/{room_id}/message_data')
+    ref.push(message_data)
+
+    # Mesajı odaya yayınla
+    send(message_data, to=room_id)
+    socketio.emit("message_status_update", {"timestamp": message_data["timestamp"], "status": message_data["status"]}, to=room_id)
+    
+
+"""
 @socketio.on("join")
 def on_join():
     room_id = session.get("room_id")          #emin değilim nerden alınmalı
@@ -288,6 +336,7 @@ def on_join():
     if user_id not in room_active_users[room_id]:
         room_active_users[room_id].append(user_id)
     socketio.emit("room_active_users", room_active_users)
+    
     #print("odada aktifler")
     #print(room_active_users)
 
@@ -303,11 +352,39 @@ def on_join():
                 status_ref = db.reference(f'rooms/{room_id}/message_data/{key}')
                 status_ref.update({"status": "Görüldü"})
                 socketio.emit("message_status_update", messages_snapshot, room=room_id)
-    
+"""
+@socketio.on("join")
+def on_join():
+    room_id = session.get("room_id")
+    user_id = session.get("telefonNo")
 
+    if not room_id:
+        return
+    join_room(room_id)
 
+    if room_id not in room_active_users:
+        room_active_users[room_id] = []
+    if user_id not in room_active_users[room_id]:
+        room_active_users[room_id].append(user_id)
 
-    """
+    # Mesajları güncelle ve yayınla
+    ref = db.reference(f'rooms/{room_id}/message_data')
+    messages_snapshot = ref.get()
+    if messages_snapshot:
+        for key, message in messages_snapshot.items():
+            if message["receiver"] == user_id:
+                ref.child(key).update({"status": "Görüldü"})
+                socketio.emit("message_status_update", {"timestamp": message["timestamp"], "status": "Görüldü"}, to=room_id)
+                
+                
+"""
+@app.route("/get_message_status/<room_id>")
+def get_message_status(room_id):
+    ref = db.reference(f'rooms/{room_id}/message_data')
+    messages_snapshot = ref.get()
+    return jsonify(messages_snapshot)
+"""
+"""
     for message in rooms[room_id]:
         if message["receiver"] == user_id and message["status"] != "Görüldü":
                     message["status"] = "Görüldü"                                            ##mesaj durumu güncellenecek
@@ -328,6 +405,44 @@ def handle_broadcast_message(data):
         rooms.setdefault(room_id, []).append(message_data)               ##rooms veritabanından geleck
         socketio.emit("message", message_data, room=room_id)
 
+
+"""
+@socketio.on("message_status_update")
+def message_status_update(data):
+    room_id = data['room_id']
+    timestamp = data['timestamp']
+    target_user_id = data['target_user_id']
+    
+    # Veritabanındaki mesajı güncelle
+    ref = db.reference(f'rooms/{room_id}/message_data')
+    messages = ref.get()
+
+    for message_id, message in messages.items():
+        if message["timestamp"] == timestamp:
+            # Eğer alıcı şu anki kullanıcı ise, durumu "Görüldü" olarak güncelle
+            if message["receiver"] == target_user_id:
+                ref.child(message_id).update({"status": "Görüldü"})
+                # Durum güncellenince, frontend'e de bunu yolla
+                socketio.emit("message_status_update", {"timestamp": timestamp, "status": "Görüldü"}, room=room_id)
+                break
+
+"""
+@socketio.on("message_status_update")
+def message_status_update(data):
+    room_id = data['room_id']
+    timestamp = data['timestamp']
+    ref = db.reference(f'rooms/{room_id}/message_data')
+    messages = ref.get()
+
+    for message_id, message in messages.items():
+        if message["timestamp"] == timestamp:
+            new_status = data["status"]
+            ref.child(message_id).update({"status": new_status})
+            # Durum güncellenince frontend'e yayın yap
+            socketio.emit("message_status_update", {"timestamp": timestamp, "status": new_status}, to=room_id)
+            break
+
+
 @app.route("/logout")                   #çıkış yapınca çalıştırılmalı
 def logout():
     user_id = session.get("telefonNo")
@@ -340,4 +455,4 @@ def logout():
   
         
 if __name__ == "__main__": 
-    app.run(debug=True)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
