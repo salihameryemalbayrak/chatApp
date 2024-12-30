@@ -1,16 +1,42 @@
 {% extends "parent.html"%}
 {% block icerik%}
+<script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
 <h1 class="page-title">Ana Sayfa</h1>
 <ul class="user-list">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
 
     <form method="post" class="search-form">
         <input type="text" name="sea" class="search-input" placeholder="Kullanıcı adı ara" value="{{ ar }}">
         <button type="submit" class="search-button">Ara</button>
     </form>
+    <h2>Broadcast Mesajı Gönder</h2>
+    <form id="broadcast-form">
+        <input type="text" id="broadcast-message" placeholder="Aktif kullanıcılara mesaj gönder">
+        <button type="submit">Gönder</button>
+    </form>
+    <form action="/logout" method="POST">
+        <button type="submit" id="logout">Çıkış Yap</button>
+    </form>    
             {% for kullanici in users %}
             <a href="{{ url_for('private_chat', target_user_id=kullanici.telefonNo, target_username=kullanici.ad) }}">
                 <li class="user-item">{{ kullanici.ad }} </li></a>
             {% endfor %}
 
 </ul>
+<script>
+    const socket = io();
+    document.getElementById('broadcast-form').addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        const message = document.getElementById('broadcast-message').value;
+        if(message.trim()) {
+            socket.emit('broadcast_message', { message: message});
+        }
+    });
+    socket.on('message',function(data) {
+        console.log('Message received: ', data);
+    })
+    
+</script>
 {% endblock %}

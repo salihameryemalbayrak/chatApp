@@ -80,8 +80,9 @@
     function sendBroadcastMessage() {
         const message = document.getElementById("broadcast-message").value;
         if (message) {
+            document.getElementById("broadcast-message").value = '';      //mesaj formunu temizlemiyor???????
             socket.emit("broadcast_message", { message: message });
-            document.getElementById("broadcast-message").value = '';
+            
         }
     }
 </script>

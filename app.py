@@ -131,6 +131,7 @@ def home():
     user_ip = request.remote_addr
     print("user ip is:--------------------")
     print(user_ip)
+    
     try:
         kullaniciAdlari = [
         {
@@ -201,12 +202,38 @@ def handle_request_users():
     
 @socketio.on("connect")
 def handle_connect():
-    user_id = session.get("telefonNo")                          ##veritabanından alınacak
+    user_id = session.get("telefonNo")  # Kullanıcı ID'sini oturumdan al
     username = session.get("kullaniciAdi")
+    
     if user_id and username:
+        # Kullanıcıyı aktif kullanıcı listesine ekle
         active_users[user_id] = username
         socketio.emit("active_users", active_users)
-    
+        
+        # Kullanıcının bulunduğu odaları bul
+        user_rooms_ref = db.reference(f'users/{user_id}/rooms')
+        user_rooms = user_rooms_ref.get()
+        
+
+        # çalışmıyor
+        if user_rooms:
+            for room_id in user_rooms:  # Kullanıcının odalarını döngüyle gez
+                room_ref = db.reference(f'rooms/{room_id}/message_data')
+                messages_snapshot = room_ref.get()
+                
+                if messages_snapshot:
+                    for key, message in messages_snapshot.items():
+                        if message["receiver"] == user_id and message["status"] != "İletildi":
+                            # Mesaj durumunu güncelle
+                            room_ref.child(key).update({"status": "İletildi"})
+                            
+                            # Durum güncellemesini odaya yayınla
+                            socketio.emit(
+                                "message_status_update",
+                                {"timestamp": message["timestamp"], "status": "İletildi", "room_id": room_id},
+                                to=room_id
+                            )
+
 
     
 
@@ -393,17 +420,52 @@ def get_message_status(room_id):
 
 @socketio.on("broadcast_message")
 def handle_broadcast_message(data):
-    message_data = {
-        "name": session["kullaniciAdi"],
-        "receiver":active_users,  
-        "message": data["message"],                                           ##mesaj burada veritabanına alınacak gönderici ve alıcı bilgisiyle beraber
-        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "status": ""
-    }
-    for user_id in active_users:
-        room_id = f"{min(session['telefonNo'], user_id)}-{max(session['telefonNo'], user_id)}"
-        rooms.setdefault(room_id, []).append(message_data)               ##rooms veritabanından geleck
+    # Gönderen kullanıcının oturum bilgilerini kontrol et
+    if "kullaniciAdi" not in session or not session["kullaniciAdi"]:
+        print("Hata: Gönderen kullanıcının oturum bilgileri eksik.")
+        return  # Eğer kullanıcı oturumu geçerli değilse işlemi sonlandır
+
+    sender_user_id = session["telefonNo"]  # Gönderenin telefon numarası
+    sender_name = session["kullaniciAdi"]  # Gönderenin kullanıcı adı
+
+    # Mesaj verisi
+    message_text = data.get("message", "")
+    if not message_text.strip():
+        print("Hata: Mesaj metni boş.")
+        return
+
+    for target_user_id in active_users:  # Aktif kullanıcılar üzerinde döngü yap
+        if target_user_id == sender_user_id:
+            continue  # Kendi kendine mesaj göndermeyi atla
+
+        # Oda ID'sini belirle
+        room_id = f"{min(sender_user_id, target_user_id)}-{max(sender_user_id, target_user_id)}"
+
+        # Mesaj verisi
+        message_data = {
+            "sender_name": sender_name,
+            "sender": sender_user_id,
+            "receiver": target_user_id,
+            "message": message_text,
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "status": "gönderildi"  # İlk durum
+        }
+
+        # Durumu "İletildi" veya "Görüldü" olarak güncelle
+        if target_user_id in active_users:
+            message_data["status"] = "İletildi"
+        if room_id in room_active_users and target_user_id in room_active_users[room_id]:
+            message_data["status"] = "Görüldü"
+
+        # Mesajı veritabanına ekle
+        ref = db.reference(f'rooms/{room_id}/message_data')
+        ref.push(message_data)
+
+        # Odaya mesajı yayınla
         socketio.emit("message", message_data, room=room_id)
+
+    print(f"Broadcast mesaj gönderildi: {message_text}")
+
 
 
 """
@@ -443,7 +505,7 @@ def message_status_update(data):
             break
 
 
-@app.route("/logout")                   #çıkış yapınca çalıştırılmalı
+@app.route("/logout", methods=["POST"])                   #çıkış yapınca çalıştırılmalı
 def logout():
     user_id = session.get("telefonNo")
     if user_id:
@@ -451,7 +513,7 @@ def logout():
         session.pop("kullaniciAdi", None)
         active_users.pop(user_id, None)
         socketio.emit("active_users", active_users)
-    return redirect(url_for("home"))        
+    return redirect(url_for("login"))        
   
         
 if __name__ == "__main__": 
