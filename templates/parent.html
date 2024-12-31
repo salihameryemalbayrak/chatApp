@@ -34,10 +34,10 @@
 }
 
     // Sunucuya bağlanma
-    socket.on("connect", () => {
-        console.log("Sunucuya bağlandı.");
-        socket.emit("users");
-    });
+    //socket.on("connect", () => {
+    //    console.log("Sunucuya bağlandı.");
+    //    socket.emit("users");
+    //});
 
     
     let activeUsersList = [];
@@ -74,6 +74,16 @@
     });
     socket.on("room_active_users", (room_active_users) => {
         
+    });
+    socket.on("connect", () => {
+    console.log("Sunucuya bağlandı.");
+    socket.emit("users");
+    
+    // Mesajların durumunu güncelle
+    const userId = "{{ session.get('telefonNo') }}";
+    if (userId) {
+        socket.emit("update_message_status", { user_id: userId });
+    }
     });
 
   

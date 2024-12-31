@@ -87,7 +87,11 @@
 </head>
 <body>
     <div id="chat-container">            
-        <h2>{{ target_user }}</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <a href="{{ url_for('home') }}" class="back-button" style="text-decoration: none; color: white; background-color: #5cb85c; padding: 8px; border-radius: 4px;">Ana Sayfa</a>
+                <h2>{{ target_user }}</h2>
+            </div>
+            <!-- mevcut içerik devam eder -->
         <div id="chat">
             {% for message in messages %}         <!-- bu kısımda mesajların ekrana yazılması sessiondan değil veritabanından olacak-->
             <div class="message">
@@ -157,6 +161,7 @@
                 $("#message").val("");
             }
         }
+        
 
         // Entere basıldığında mesaj gönderme işlevi
         $("#message").on("keyup", function (event) {
@@ -170,6 +175,12 @@
             const chat = $("#chat");
             chat.scrollTop(chat[0].scrollHeight);
         }
+        // Sayfa kapatıldığında veya başka sayfaya geçildiğinde
+
+// Geri butonu için özel event listener
+    document.querySelector('.back-button').addEventListener('click', (e) => {
+        socket.emit('leave_room', { room_id: "{{ room_id }}" });
+    });
    /*
    
    function fetchMessageStatus() {

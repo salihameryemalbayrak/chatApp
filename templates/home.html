@@ -27,16 +27,18 @@
 <script>
     const socket = io();
     document.getElementById('broadcast-form').addEventListener('submit', function(event) {
-        event.preventDefault();
-
-        const message = document.getElementById('broadcast-message').value;
-        if(message.trim()) {
-            socket.emit('broadcast_message', { message: message});
-        }
+    event.preventDefault();
+    const messageInput = document.getElementById('broadcast-message');
+    const message = messageInput.value;
+    if(message.trim()) {
+        socket.emit('broadcast_message', { message: message });
+        messageInput.value = ''; // Form temizleme
+    }
     });
     socket.on('message',function(data) {
         console.log('Message received: ', data);
     })
+    
     
 </script>
 {% endblock %}

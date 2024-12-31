@@ -108,6 +108,23 @@ def login():
             flash("Giriş yaparken bir hata oluştu: ", "error")
 
     return render_template("GirisYap.html", baslik="Login", f=form2)
+@socketio.on("update_message_status")
+def handle_status_update(data):
+    user_id = data.get("user_id")
+    if user_id:
+        ref = db.reference('rooms')
+        rooms = ref.get()
+        if rooms:
+            for room_id in rooms.items():
+                ref2 = db.reference(f'rooms/{room_id}/message_data')
+                messages_snapshot = ref2.get()
+                if messages_snapshot:
+                    for key, message in messages_snapshot.items():
+                        if message["receiver"] == user_id:
+                            ref2.child(key).update({"status": "iletildi"})
+                            socketio.emit("message_status_update", {"timestamp": message["timestamp"], "status": "iletildi"}, to=room_id)
+                
+                                
 
 @app.route("/sifremiUnuttum", methods=["GET", "POST"])
 def sifremiunuttum():
@@ -131,7 +148,13 @@ def home():
     user_ip = request.remote_addr
     print("user ip is:--------------------")
     print(user_ip)
-    
+    user_id = telefon_no
+    if user_id in room_active_users:
+
+        #active_users.pop(user_id)
+        #room_active_users.pop(user_id)
+        room_active_users[rooms].remove(user_id)
+        socketio.emit("room_active_users", room_active_users)
     try:
         kullaniciAdlari = [
         {
@@ -199,7 +222,17 @@ def handle_request_users():
        
        socketio.emit("users", users)
     """
+@socketio.on("leave_room")
+def handle_leave_room(data):
+    room_id = data.get("room_id")
+    user_id = session.get("telefonNo")
     
+    if room_id and user_id:
+        leave_room(room_id)
+        if room_id in room_active_users and user_id in room_active_users[room_id]:
+            room_active_users[room_id].remove(user_id)
+            socketio.emit("room_active_users", room_active_users)
+
 @socketio.on("connect")
 def handle_connect():
     user_id = session.get("telefonNo")  # Kullanıcı ID'sini oturumdan al
@@ -214,7 +247,6 @@ def handle_connect():
         user_rooms_ref = db.reference(f'users/{user_id}/rooms')
         user_rooms = user_rooms_ref.get()
         
-
         # çalışmıyor
         if user_rooms:
             for room_id in user_rooms:  # Kullanıcının odalarını döngüyle gez
@@ -251,10 +283,10 @@ def handle_disconnect():
 
    ##eklendiğinde üstteki geri tuşu ile çıkış yapılıyor fakat o zaman da private chat sayfasından geri tuşuna basıldığında da çıktığı için mesaj atamıyor sayfa yeniden yüklenene kadar
     
-    if user_id in active_users:
+    if user_id in room_active_users:
 
         #active_users.pop(user_id)
-        #room_active_users.pop(user_id)
+        room_active_users.pop(user_id)
         room_active_users[room_id].remove(user_id)
         socketio.emit("room_active_users", room_active_users)
         #socketio.emit("active_users", active_users)
