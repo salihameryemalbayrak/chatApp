@@ -29,15 +29,17 @@
     const socket = io();
 
     function logoutUser() {
-    socket.emit("logout"); // Socket üzerinden logout isteği gönder
-    //window.location.href = "{{ url_for('logout') }}"; // Çıkış işlemi için Flask yönlendirmesi
+    socket.emit("logout");
 }
 
-    // Sunucuya bağlanma
-    //socket.on("connect", () => {
-    //    console.log("Sunucuya bağlandı.");
-    //    socket.emit("users");
-    //});
+    socket.on("connect", () => {
+        console.log("Sunucuya bağlandı.");
+        socket.emit("users");
+        const userId = "{{ session.get('telefonNo') }}";
+        if (userId) {
+            socket.emit("update_message_status", { user_id: userId });
+    }
+    });
 
     
     let activeUsersList = [];
@@ -47,7 +49,7 @@
         userList.innerHTML = ''; 
 
         for (const [userId, user] of Object.entries(users)) {
-            if (user.username === "{{ session['kullaniciAdi'] }}") continue; // Oturum açan kullanıcıyı hariç tut veritabanındaki kullanıcıların hepsini tek tek gez
+            if (user.username === "{{ session['kullaniciAdi'] }}") continue;
 
             const li = document.createElement("li");
             li.id = "user-" + userId;
@@ -74,16 +76,6 @@
     });
     socket.on("room_active_users", (room_active_users) => {
         
-    });
-    socket.on("connect", () => {
-    console.log("Sunucuya bağlandı.");
-    socket.emit("users");
-    
-    // Mesajların durumunu güncelle
-    const userId = "{{ session.get('telefonNo') }}";
-    if (userId) {
-        socket.emit("update_message_status", { user_id: userId });
-    }
     });
 
   

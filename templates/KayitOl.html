@@ -1,5 +1,6 @@
 {% extends "parent.html" %}
 {% block icerik %}
+
     <div class="main-style">
         <form action="" method="post" class="form-container">
             {{f.hidden_tag()}}
@@ -7,7 +8,7 @@
                 <caption> <h3>Kayıt Formu</h3></caption>
             </legend>
             {{ f.telefonNo.label(class ="label-style") }}
-            {{ f.telefonNo(class ="input-style",oninput="this.value = this.value.replace(/[^0-9]/g, '')")}}
+            {{ f.telefonNo(class ="input-style",placeholder = "Telefon numaranızı başında 0 olmadan giriniz",oninput="this.value = this.value.replace(/[^0-9]/g, '')")}}
             {% if f.telefonNo.errors %}
             <ul class="error-list">
                     {{f.telefonNo.errors[0]}}
@@ -46,4 +47,5 @@
         
         </form>
     </div>
+
 {% endblock %}

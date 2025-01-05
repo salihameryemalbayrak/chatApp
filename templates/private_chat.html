@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Özel Sohbet</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <style>
@@ -14,7 +15,7 @@
             margin: 0;
             background-color: #f4f4f4;
             font-family: Arial, sans-serif;
-            overflow: hidden; /* Sayfa kaydırmasını kaldırır */
+            overflow: hidden; 
         }
         #chat-container {
             background-color: white;
@@ -25,13 +26,13 @@
             max-width: 90%;
             display: flex;
             flex-direction: column;
-            height: 80vh; /* Sabit bir yükseklik */
+            height: 80vh; 
         }
         #chat {
-            flex: 1; /* Yüksekliği dinamik olarak ayarlanır */
-            overflow-y: auto; /* Sadece içerik sığmadığında kaydırma ekler */
+            flex: 1; 
+            overflow-y: auto; 
             margin-bottom: 10px;
-            padding-right: 10px; /* Kaydırma çubuğuna yer bırakmak için */
+            padding-right: 10px; 
         }
         .message {
             display: flex;
@@ -44,14 +45,14 @@
         }
         .message-content {
             display: flex;
-            flex-direction: column; /* İçeriği üst üste sıralamak için */
+            flex-direction: column; 
             align-items: flex-start;
         }
         .message-content strong {
-            margin-bottom: 5px; /* Ad ile mesaj arasında boşluk bırakmak için */
+            margin-bottom: 5px; 
         }
         .message-content span {
-            font-size: 0.9em; /* Mesajın içeriğini biraz küçültebiliriz */
+            font-size: 0.9em; 
         }
         .message-details {
             display: flex;
@@ -87,17 +88,21 @@
 </head>
 <body>
     <div id="chat-container">            
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <a href="{{ url_for('home') }}" class="back-button" style="text-decoration: none; color: white; background-color: #5cb85c; padding: 8px; border-radius: 4px;">Ana Sayfa</a>
-                <h2>{{ target_user }}</h2>
-            </div>
-            <!-- mevcut içerik devam eder -->
+        <h2 style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <a href="{{ url_for('home') }}" class="back-button" style="text-decoration: none; color: white; background-color: #5cb85c; padding: 8px; border-radius: 4px;">Ana Sayfa</a>
+            <span>{{ target_user }}</span>
+            <a href="{{ url_for('arama') }}">
+                <i class="fas fa-phone-alt"></i></a>
+
+        </h2>
+        
+        
         <div id="chat">
-            {% for message in messages %}         <!-- bu kısımda mesajların ekrana yazılması sessiondan değil veritabanından olacak-->
+            {% for message in messages %}     
             <div class="message">
                 <div class="message-content">
-                    <strong>{{ message.sender_name }}</strong> <!-- Adı üstte göster -->
-                    <span>{{ message.message }}</span> <!-- Mesajın içeriğini altta göster -->
+                    <strong>{{ message.sender_name }}</strong> 
+                    <span>{{ message.message }}</span> 
                 </div>
                 <div class="message-details">
                     <span class="timestamp">at {{ message.timestamp }}</span>
@@ -120,8 +125,7 @@
         });
 
         socket.on("message", (data) => {
-            let statusHTML = ''; // Durumu tutacak değişken
-            // Eğer mesaj target_user'a aitse, status kısmını gizle
+            let statusHTML = ''; 
             if (data.sender !== "{{ target_user_id }}") {
                 statusHTML = `<span class="status">${data.status}</span>`;
             }
@@ -138,17 +142,16 @@
                     </div>
                 </div>
             `);
-            scrollToBottom(); // Yeni mesaj geldiğinde kaydır
+            scrollToBottom(); 
         });
 
             socket.on("message_status_update", (data) => {
-                const timestamp = data.timestamp;  // timestamp bilgisi alındı
-                const newStatus = data.status;  // yeni durum (Görüldü)
+                const timestamp = data.timestamp;  
+                const newStatus = data.status;  
                 
                 $("#chat .message").each(function () {
-                    const messageTimestamp = $(this).find(".timestamp").text().replace("at ", "");  // timestamp'ı bul
+                    const messageTimestamp = $(this).find(".timestamp").text().replace("at ", "");  
                     if (messageTimestamp === timestamp) {
-                        // Mesajın durumunu güncelle
                         $(this).find(".status").text(newStatus);
                     }
                 });
@@ -161,48 +164,21 @@
                 $("#message").val("");
             }
         }
-        
 
-        // Entere basıldığında mesaj gönderme işlevi
         $("#message").on("keyup", function (event) {
             if (event.key === "Enter") {
                 sendMessage();
             }
         });
 
-        // Mesaj kutusunu en alta kaydıran fonksiyon
         function scrollToBottom() {
             const chat = $("#chat");
             chat.scrollTop(chat[0].scrollHeight);
         }
-        // Sayfa kapatıldığında veya başka sayfaya geçildiğinde
-
-// Geri butonu için özel event listener
-    document.querySelector('.back-button').addEventListener('click', (e) => {
+        document.querySelector('.back-button').addEventListener('click', (e) => {
         socket.emit('leave_room', { room_id: "{{ room_id }}" });
     });
-   /*
-   
-   function fetchMessageStatus() {
-    fetch(`/get_message_status/{{ room_id }}`)
-    .then(response => response.json())
-    .then(data => {
-        const messageElements = document.querySelectorAll(".message");
-        messageElements.forEach(messageElement => {
-            const messageId = messageElement.dataset.messageId;
-            if (data[messageId]) {
-                const statusElement = messageElement.querySelector(".status");
-                statusElement.textContent = data[messageId].status;
-            }
-        });
-    });
-}
-
-// Her 5 saniyede bir kontrol et
-setInterval(fetchMessageStatus, 5000);
-*/
-
-
+  
     </script>
 </body>
 </html>

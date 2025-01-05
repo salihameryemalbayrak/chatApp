@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebRTC Voice Chat</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        text-align: center;
+        background-color: blanchedalmond;
+      }
+      #users {
+        margin: 20px 0;
+      }
+      button {
+        padding: 10px 20px;
+        margin: 10px;
+        font-size: 16px;
+        background-color: cadetblue;
+      }
+      audio {
+        display: block;
+        margin: 20px auto;
+      }
+      .hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="myID" style="display: none;" data-id="{{ arayan }}"></div>
+
+    <div>
+      <button id="startCall">Aramayı Başlat</button>
+      <button id="endCall" class="hidden">Aramayı Durdur</button>
+      <button id="muteButton" class="hidden">Sesi Kapat</button>
+    </div>
+    <div id="status">Durum: Bağlantı Yok</div>
+
+    <div>
+      <h2>Kullanıcı Listesi</h2>
+      <section id="userList">
+        <div id="userIdInput" style="display: none;" data-id="{{ aranan }}"></div>
+      </section>
+    </div>
+
+    <!-- Audio elements -->
+    <audio id="localAudio" autoplay muted></audio>
+    <audio id="remoteAudio" autoplay></audio>
+
+    <!-- Script -->
+    <script src="{{ url_for('static', filename='client.js') }}"></script>
+  </body>
+</html>

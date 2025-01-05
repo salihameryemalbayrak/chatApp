@@ -2,20 +2,19 @@ from flask_wtf import FlaskForm
 from wtforms import BooleanField, StringField,PasswordField,SubmitField,EmailField
 from wtforms.validators import *
 
+def serilization(form, field):
+    icerik = field.data
+    
+    karakterler = ["<", ">", ";", "(", ")", "="]
+    for karakter in karakterler:
+        icerik = icerik.replace(karakter, "")
 
-# def sifre_dogrulama(form, field):
-#     sifre = field.data    
-#     if not any(karakter.islower() for karakter in sifre):
-#         raise ValidationError("Şifre en az bir küçük harf içermelidir.")
-#     if not any(karakter.isupper() for karakter in sifre):
-#         raise ValidationError("Şifre en az bir büyük harf içermelidir.")
-#     if not any(karakter.isdigit() for karakter in sifre):
-#         raise ValidationError("Şifre en az bir rakam içermelidir.")
-
-
+    field.data = icerik
 
 class YeniKayitFormu(FlaskForm) :
-    kullaniciAdi = StringField("kullanıcı Adı ", validators=[DataRequired("bu alanı doldurmak zorunlu"),Length(min=2,max=25)])
+    kullaniciAdi = StringField("kullanıcı Adı ", validators=[
+        DataRequired("bu alanı doldurmak zorunlu"),
+        Length(min=2,max=25)])
     telefonNo =    StringField("Telefon Numarası ", validators=[DataRequired("Lütfen telefon numaranızı başında sıfır olmadan yazınız"),
         Length(min=10, max=10)])
     
@@ -37,10 +36,6 @@ class SifreSifirlama(FlaskForm):
         Email(message="Lütfen geçerli bir e-posta adresi girin.")
     ])
     buton = SubmitField("Şifremi Sıfırla")
-
-# class forgotPass (YeniKayitFormu):
-#     buton = SubmitField("Şifremi Unuttum")
-
 
 class LoginForm(FlaskForm) :
     

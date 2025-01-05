@@ -1,6 +1,7 @@
+
 .main-style{
+  background-color: #f0f8ff;
     font-family: Arial, sans-serif;
-    background-color: #f0f8ff;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -58,6 +59,7 @@
 }
 
 
+
 .page-title {
     text-align: center;
     color: #333;
@@ -108,7 +110,6 @@
     justify-content: center;
 }
 
-/* Arama input alanı */
 .search-input {
     width: 100%;
     padding: 12px 20px;
@@ -124,9 +125,8 @@
     border-color: #4CAF50;
 }
 
-/* Arama butonu */
 .search-button {
-    background-color: #4CAF50; /* Yeşil renk */
+    background-color: #4CAF50;
     color: white;
     padding: 12px 20px;
     border: none;
@@ -137,7 +137,30 @@
     transition: background-color 0.3s ease;
 }
 
-/* Buton hover efekti */
 .search-button:hover {
     background-color: #45a049;
+}
+
+.cikis_buton {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    padding: 10px 20px;
+    background-color: #e74c3c;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.cikis_buton:hover {
+    background-color: #c0392b;
+    transform: translateY(-3px);
+}
+
+.cikis_buton:active {
+    transform: translateY(1px);
 }

@@ -6,7 +6,6 @@
                 <caption> <h3>Login</h3></caption>
             </legend>
             {{f.hidden_tag()}}
-
             {{ f.Eposta.label(class ="label-style") }}
             {{ f.Eposta(class ="input-style")}}
             {% if f.Eposta.errors %}
@@ -14,8 +13,7 @@
                     {{f.Eposta.errors[0]}}
             </ul>
             {% endif %}
-        
-        
+
             {{ f.sifre.label(class ="label-style") }}
             {{f.sifre(class ="input-style")}}
             {% if f.sifre.errors %}
@@ -23,11 +21,7 @@
                     {{f.sifre.errors[0]}}
             </ul>
             {% endif %}
-        
-        
-            <!-- {{f.rememberMe}}
-            {{ f.rememberMe.label }} -->
-
+            
             <br> <br> <a href="KayitOl">Hesabım Yok</a> <br> <br> 
         
             {{f.buton(class ="submit-button")}}
