@@ -1,6 +1,6 @@
 
 .main-style{
-  background-color: #f0f8ff;
+    background-color: #f0f8ff;
     font-family: Arial, sans-serif;
     display: flex;
     justify-content: center;
@@ -16,6 +16,41 @@
     width: 300px;
     border: 2px solid #ccc;
     position: relative;
+}
+
+/* Sekme Konteyneri ve Düğmeleri */
+
+
+
+
+.tab-button {
+    background-color: #fff;
+    padding: 10px 20px;
+    font-size: 1.2em;
+    border: none; /* Sekme düğmelerinin kenarlarını temizliyoruz */
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+    border-radius: 25px; /* Sekmelerin köşelerini yuvarlatıyoruz */
+    flex: 1; /* Sekmelerin eşit genişlikte olmasını sağlıyoruz */
+}
+
+.tab-button:hover {
+    background-color: #f0f8ff;
+}
+
+.tab-button.active {
+    background-color: #4CAF50;
+    color: white;
+    transform: scale(1.1); /* Aktif sekmeye tıklanınca büyüme efekti */
+}
+
+.tab-content {
+    display: none;
+    width: 100%;
+}
+
+.tab-content.active {
+    display: block;
 }
 
 .header-style {
@@ -60,19 +95,22 @@
 
 
 
-.page-title {
-    text-align: center;
-    color: #333;
-    padding-top: 50px;
-    font-size: 2.5em;
-}
+
 
 .user-list {
     list-style-type: none;
     padding: 0;
     margin: 50px auto;
-    width: 80%;
+    width: 100%;
     max-width: 800px;
+}
+
+.search-form {
+    max-width: 500px;
+    margin: 20px auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .user-list a {
@@ -100,14 +138,6 @@
 .user-item span {
     color: #555;
     font-size: 1em;
-}
-
-.search-form {
-    max-width: 500px;
-    margin: 20px auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 .search-input {
@@ -163,4 +193,78 @@
 
 .cikis_buton:active {
     transform: translateY(1px);
+}
+
+.broadCastO {
+    text-align: center;
+    color: #333;
+    font-size: 1.8em;
+    margin-bottom: 20px;
+    font-weight: bold;
+}
+
+.Form-broadCastO {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto;
+    max-width: 600px;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.Field-broadCastO {
+    width: 100%;
+    padding: 12px 20px;
+    font-size: 16px;
+    border: 2px solid #ccc;
+    border-radius: 25px;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.3s ease;
+}
+
+.Field-broadCastO:focus {
+    border-color: #4CAF50;
+}
+
+.buton-broadCastO {
+    background-color: #4CAF50;
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 25px;
+    font-size: 16px;
+    cursor: pointer;
+    width: 100%;
+    transition: background-color 0.3s ease;
+}
+
+.buton-broadCastO:hover {
+    background-color: #45a049;
+}
+
+
+.page-title {
+    text-align: center;
+    color: #333;
+    padding-top: 20px; /* Ana sayfa yazısını biraz aşağı indiriyoruz */
+    font-size: 2.5em;
+    margin-bottom: 20px; /* Sekmelerle arasına boşluk ekliyoruz */
+}
+
+.tab-container {
+    width: 80%;
+    max-width: 800px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column; /* Sekmeleri üstte, içeriği alta yerleştiriyoruz */
+}
+
+.tab-links {
+    display: flex;
+    border: 2px solid #ccc;
+    border-radius: 25px;
+    overflow: hidden;
+    margin-bottom: 20px; /* Sekmelerle içerik arasına boşluk ekliyoruz */
 }

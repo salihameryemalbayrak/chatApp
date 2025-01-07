@@ -130,7 +130,7 @@ def handle_status_update(data):
                         if message["receiver"] == user_id:
                             ref2.child(key).update({"status": "iletildi"})
                             socketio.emit("message_status_update", {"timestamp": message["timestamp"], "status": "iletildi"}, to=room_id)
-             
+    
 @app.route("/sifremiUnuttum", methods=["GET", "POST"])
 def sifremiunuttum():
     form3 = SifreSifirlama()
@@ -171,14 +171,45 @@ def home():
         if doc.to_dict().get("telefonNo") != telefon_no 
             ]
         arama = request.form.get('sea')
+
+#  buradan 
+        kayitliAramalarim = []
+        refCalls = db.reference('calls')
+        calls = refCalls.get()
+
+        if isinstance(calls, dict):  # Eğer `calls` bir sözlükse
+            calls = list(calls.keys())  # Sözlüğü listeye çevir
+            print("calls, listeye dönüştürüldü:", calls)
         
+        if isinstance(calls, list):  # `calls` bir liste mi kontrol et
+            for value in calls:
+                if telefon_no in value:  # Telefon numarası kontrolü
+                    try:
+                        room = db.reference(f'calls/{value}')
+                        SesliArama = room.get()
+                        if isinstance(SesliArama, dict):  # `SesliArama` bir dict mi kontrol et
+                            for key, vale in SesliArama.items():
+                                if isinstance(vale, dict):  # `vale` bir dict mi kontrol et
+                                    bir = {
+                                        "arayan": vale.get("callerID", "Bilinmeyen Arayan"),
+                                        "aranan": vale.get("calleeID", "Bilinmeyen Aranan")
+                                    }
+                                    bir ["startTime"] = vale.get("startTime")
+                                    if vale.get("endTime"):
+                                        bir["endTime"] = vale.get("endTime")
+                                    kayitliAramalarim.append(bir)
+                    except Exception as e:
+                        print(f"Firebase çağrısında hata: {e}")
+        else:
+            print("Hata: `calls` beklenen formatta değil.")
+            #buraya    
         if arama:
             kullaniciAdlari = [k for k in kullaniciAdlari if arama.lower() in k['ad'].lower() or arama in k['telefonNo']]
 
         else : 
-            arama =""
+            arama =""  
         
-        return render_template("home.html",  users = kullaniciAdlari, ar =arama)
+        return render_template("home.html",  users = kullaniciAdlari, ar =arama,sesli_Aramalar = kayitliAramalarim)
     except Exception as e:
         print(e)
         flash("Bir hata oluştu. Lütfen daha sonra tekrar deneyin.", "error")
@@ -315,7 +346,7 @@ def on_join():
         room_active_users[room_id] = []
     if user_id not in room_active_users[room_id]:
         room_active_users[room_id].append(user_id)
-"""
+
     ref = db.reference(f'rooms/{room_id}/message_data')
     messages_snapshot = ref.get()
     if messages_snapshot:
@@ -323,7 +354,7 @@ def on_join():
             if message["receiver"] == user_id:
                 ref.child(key).update({"status": "Görüldü"})
                 socketio.emit("message_status_update", {"timestamp": message["timestamp"], "status": "Görüldü"}, to=room_id)
-"""
+
 @socketio.on("broadcast_message")
 def handle_broadcast_message(data):
     # Gönderen kullanıcının oturum bilgilerini kontrol et
@@ -397,6 +428,8 @@ def logout():
         socketio.emit("active_users", active_users)
         print("çıkış basarılı")
     return redirect(url_for("login"))        
-
+        
+"""if __name__ == "__main__": 
+    app.run(port=5000,debug=True,ssl_context=('server.cert','server.key'))"""
 if __name__ == "__main__": 
     socketio.run(app, host='0.0.0.0', port=5000, debug=True,ssl_context=('server.cert','server.key'))

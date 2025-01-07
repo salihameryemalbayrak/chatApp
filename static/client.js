@@ -1,17 +1,21 @@
 //İstemci tarafında çalışan, WebSocket üzerinden kullanıcıların sesli arama yapmasını sağlayan kodlardır.
 
-// IPv4 adresi, her seferinde güncel adres ile değiştirilmeli
-const socket = new WebSocket("wss://192.168.247.1:9090"); 
+const socket = new WebSocket("ws://localhost:3000"); // localde test için bu kullanılacak.
 
 //HTML'deki belirtilen öğelere erişimi sağlar.
 const userList = document.getElementById("userList");
 const startCallButton = document.getElementById("startCall");
 const endCallButton = document.getElementById("endCall");
+const muteButton = document.getElementById("muteButton")
 const statusDiv = document.getElementById("status");
 const localAudio = document.getElementById("localAudio");
 const remoteAudio = document.getElementById("remoteAudio");
-const userIdInput = document.getElementById("userIdInput");
-const myID = document.getElementById("myID");
+
+const div_userIdInput = document.getElementById("userIdInput");
+const userIdInput = div_userIdInput.getAttribute("data-id");
+
+const div_myID = document.getElementById("myID");
+const myID = div_myID.getAttribute("data-id");
 
 // Gelen çağrı ekranı
 const incomingCallDiv = document.createElement("div");
@@ -19,8 +23,8 @@ incomingCallDiv.id = "incomingCall";
 incomingCallDiv.style.display = "none"; // varsayılan olarak gizledim.
 incomingCallDiv.innerHTML = `
   <p id="incomingCallMessage"></p>
-  <button id="acceptCall">Accept</button>
-  <button id="rejectCall">Reject</button>
+  <button id="acceptCall">Aramayı Kabul Et</button>
+  <button id="rejectCall">Aramayı Reddet</button>
 `;
 document.body.appendChild(incomingCallDiv);
 
@@ -30,16 +34,17 @@ const incomingCallMessage = document.getElementById("incomingCallMessage");
 
 let localStream;
 let peerConnection;
-// bu servere bağlanınca bizim için tanımlanan numara
-let currentUserID;
-// bu arama yapmak için seçeceğimiz kullanıcını numarası
+let currentUserID = myID.valueOf()  ;
 let selectedUserID;
+let isMuted = false;
+
 
 //ICE Sunucuları: WebRTC bağlantısını kurmak için kullanılan STUN Suncusudur.
 // birden fazla url eklenebilir buraya
 const configuration = {
   iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
 };
+
 
 // Arama Kabul Etme ve ya Reddetme
 // handleOffer, bir çağrı geldiğinde çalışır.
@@ -50,18 +55,26 @@ async function handleOffer(offer, from) {
   incomingCallDiv.style.display = "block";
 
   // Aramanın kimden geldiğini içeren mesaj
-  incomingCallMessage.textContent = `${from}'dan gelen çağrı.`;
+  incomingCallMessage.textContent = `${from}'den gelen çağrı`;
   
   // ----- Kabul et butonu tıklandığında -----
   acceptCallButton.onclick = async () => {
-    // Gelen arama ekranını kapat.
+    // Medya akışını sağlama
+    if (!localStream) {
+      // Mikrofon alma
+      await getLocalStream();
+    }
+
+    // Arama başladıktan sonra sesi kapat butonu görünür yapma
+    muteButton.classList.remove("hidden");
+
+    // Gelen arama ekranını gizle.
     incomingCallDiv.style.display = "none";
 
     // WebRTC bağlantısı için bir RTCPeerConnection nesnesi oluşturulur.
     createPeerConnection();
     // Gelen offer'ın bilgisini peerConnection'a uzaktan oturum tanımı
-    await peerConnection.setRemoteDescription(new RTCSessionDescription(offer)); 
-    //RTCSessionDescription: WebRTC'de oturum bilgilerini içeren bir nesne.
+    await peerConnection.setRemoteDescription(new RTCSessionDescription(offer)); //RTCSessionDescription: WebRTC'de oturum bilgilerini içeren bir nesne.
 
     // Offer'a karşılık verilen cevap, yani Kabul Etme olayı.
     const answer = await peerConnection.createAnswer();
@@ -77,7 +90,7 @@ async function handleOffer(offer, from) {
         from: currentUserID, // cevabı veren kişinin kullanıcı kimliği
       })
     );
-    updateStatus(`${from} ile görüşme yapılıyor.`); 
+    updateStatus(`${from} ile görüşme yapılıyor`); 
     startCallButton.classList.add("hidden"); //arama butonunu gizleme
     endCallButton.classList.remove("hidden"); //bitirme butonunu aktif etme
   };
@@ -101,12 +114,14 @@ async function handleOffer(offer, from) {
   };
 }
 
+
 // bildirimler
 function updateStatus(message) {
   statusDiv.textContent = `Durum: ${message}`;
 }
 
-// kullanıcı hariç diğer kullanıcılarının numarasının gösterildiği liste.
+
+// kullanıcı hariç diğer kullanıcılarının ID'sinin gösterildiği liste.
 function updateUserList(users) {
   users
     .filter((user) => user !== currentUserID)
@@ -118,18 +133,22 @@ function updateUserList(users) {
     });
 }
 
+
 // Kullanıcının yerel mikrofonuna erişimi sağlar.
 async function getLocalStream() {
   try {
     //mikrofona erişim talebi
     localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    localAudio.srcObject = localStream;
-    updateStatus("Arama yapmaya hazır");
+    // Mikrofon akışını audio elementine bağlanır ve mikrofon akışı sağlanır.
+    //localAudio.srcObject = localStream;
+    updateStatus("Aramaya  hazır");
   } catch (error) {
     console.error("Medya aygıtlarına erişim hatası:", error);
-    updateStatus("Hata: Mikrofon kullanılamıyor.");
+    updateStatus("Hata: Mikrofon kullanılamıyor");
   }
 }
+
+
 
 // --- İKİ CİHAZ VE İKİ SEKME ARASINDA BAĞLANTI ---
 // Webrtc bağlantısını kurar ve gerekli olay dişleyicileri ayarlar.
@@ -160,15 +179,16 @@ function createPeerConnection() {
   };
 }
 
+
 // iki cihaz arasında bağlantı kurmak ve yönetmek için bir signal mekanizması
 socket.onmessage = async (event) => {
   const message = JSON.parse(event.data);
 
-  // bağlandım ve numaramın tanımlanmasını bekliyorum
+  // bağlandım ve IDmin tanımlanmasını bekliyorum
   if (message.type === "register") {
-    currentUserID = message.userID;
-    myID.innerText = currentUserID;
-    updateStatus(`${currentUserID} olarak bağlandı`);
+    // currentUserID = message.userID;
+    // myID.valueOf() = currentUserID;
+    updateStatus(`${currentUserID} olarak bağlandı.`);
   } else if (message.type === "user-list") {
     updateUserList(message.users);
   } else if (message.type === "offer") {
@@ -184,15 +204,17 @@ socket.onmessage = async (event) => {
   }
 };
 
+
+
 startCallButton.addEventListener("click", async () => {
-  if (!userIdInput.value) {
-    alert("Lütfen arama yapmak için bir kullanıcı seçin.");
+  if (!userIdInput.valueOf()) {
+    alert("Lütfen aramak için bir kullanıcı seçin.");
     return;
   }
   // Hedef kullanıcının seçilip seçilmediğini kontrol etme
 
-  // Hedef kullanıcı numarasını ayarlama
-  selectedUserID = userIdInput.value;
+  // Hedef kullanıcı kimliğini ayarlama
+  selectedUserID = userIdInput.valueOf();
 
   // yerel medya akışı kontrolü
   if (!localStream) {
@@ -215,13 +237,14 @@ startCallButton.addEventListener("click", async () => {
   updateStatus(`${selectedUserID} aranıyor...`);
   startCallButton.classList.add("hidden");
   endCallButton.classList.remove("hidden");
+  muteButton.classList.remove("hidden");
 });
 
 
-
+// Bu işlemlerin hepsi üsttekilerle neredeyse aynı ama signal için yeniden tanımladım.
 async function handleAnswer(answer) {
   await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
-  updateStatus(`${selectedUserID} ile çağrı bağlantısı kuruldu.`);
+  updateStatus(`${selectedUserID} ile çağrı bağlantısı kuruldu`);
 }
 
 async function handleReject(from) {
@@ -237,6 +260,7 @@ async function handleEndCall(from) {
 
   startCallButton.classList.remove("hidden");
   endCallButton.classList.add("hidden");
+  muteButton.classList.add("hidden");
 }
 
 async function handleIceCandidate(candidate) {
@@ -260,11 +284,34 @@ endCallButton.addEventListener("click", () => {
   );
 
   selectedUserID = null;
-  updateStatus("Çağrı sona erdi");
+  updateStatus("Çağrı sona erdi.");
   startCallButton.classList.remove("hidden");
   endCallButton.classList.add("hidden");
+  muteButton.classList.add("hidden");
 });
 
 (async () => {
   await getLocalStream();
 })();
+
+
+// Sesi Kapat Butonu tıklandığında 
+muteButton.addEventListener("click", () => {
+    if (!localStream)
+    return;
+
+  // Mute durumu değişmesi
+    isMuted = !isMuted
+
+  // Mikrofonu kapat ya da aç
+    localStream.getTracks().forEach((track) => {
+    // track'ın ses olup olmadığını kontrol etme
+    if (track.kind === "audio") {
+      // Mikrofonu aktif ya da pasif yapma
+        track.enabled = !isMuted;
+    }
+    });
+
+  // Buton metnini durumuna göre guncelleme
+    muteButton.textContent = isMuted ? "Sesi Aç" : "Sesi Kapat";
+});
