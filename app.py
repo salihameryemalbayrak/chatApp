@@ -209,6 +209,14 @@ def private_chat(target_user_id, target_username):
             n.append(value)
 
     messages = n
+    
+    ref = db.reference(f'rooms/{room_id}/message_data')
+    messages_snapshot = ref.get()
+    if messages_snapshot:
+        for key, message in messages_snapshot.items():
+            if message["receiver"] == session['telefonNo']:
+                ref.child(key).update({"status": "Görüldü"})
+                socketio.emit("message_status_update", {"timestamp": message["timestamp"], "status": "Görüldü"}, to=room_id)
     return render_template("private_chat.html", room_id=room_id, messages=messages, target_user=target_username,target_user_id=target_user_id)
 
 @socketio.on("join_room")
@@ -307,7 +315,7 @@ def on_join():
         room_active_users[room_id] = []
     if user_id not in room_active_users[room_id]:
         room_active_users[room_id].append(user_id)
-
+"""
     ref = db.reference(f'rooms/{room_id}/message_data')
     messages_snapshot = ref.get()
     if messages_snapshot:
@@ -315,7 +323,7 @@ def on_join():
             if message["receiver"] == user_id:
                 ref.child(key).update({"status": "Görüldü"})
                 socketio.emit("message_status_update", {"timestamp": message["timestamp"], "status": "Görüldü"}, to=room_id)
-
+"""
 @socketio.on("broadcast_message")
 def handle_broadcast_message(data):
     # Gönderen kullanıcının oturum bilgilerini kontrol et
@@ -389,8 +397,6 @@ def logout():
         socketio.emit("active_users", active_users)
         print("çıkış basarılı")
     return redirect(url_for("login"))        
-        
-"""if __name__ == "__main__": 
-    app.run(port=5000,debug=True,ssl_context=('server.cert','server.key'))"""
+
 if __name__ == "__main__": 
     socketio.run(app, host='0.0.0.0', port=5000, debug=True,ssl_context=('server.cert','server.key'))
