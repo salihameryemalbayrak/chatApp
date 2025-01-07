@@ -1,81 +1,45 @@
-{% extends "parent.html" %}
-{% block icerik %}
+{% extends "parent.html"%}
+{% block icerik%}
 <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
-
-<!-- Ana Sayfa Başlığı -->
 <h1 class="page-title">Ana Sayfa</h1>
+<ul class="user-list">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
 
-<!-- Sekme Yapısı -->
-<div class="tab-container">
-    <div class="tab-links">
-        <button class="tab-button active" id="home-tab">Ana Sayfa</button>
-        <button class="tab-button" id="search-tab">Kayıtlı Aramalar</button>
-    </div>
-
-    <!-- Ana Sayfa İçeriği -->
-    <div id="home-content" class="tab-content active">
-        <ul class="user-list">
-            <!-- Çıkış Butonu -->
-            <form action="{{ url_for('logout') }}" method="POST">
-                <button type="submit" class="cikis_buton">Çıkış Yap</button>
-            </form>
-
-             <!-- Broadcast Mesaj Formu -->
-             <h2 class="broadCastO">Broadcast Mesajı Gönder</h2>
-             <form id="broadcast-form" class="Form-broadCastO">
-                 <input class="Field-broadCastO" type="text" id="broadcast-message" placeholder="Aktif kullanıcılara mesaj gönder">
-                 <button class="buton-broadCastO" type="submit">Gönder</button>
-             </form>
-
-            <!-- Arama Formu -->
-            <form method="post" class="search-form">
-                <input type="text" name="sea" class="search-input" placeholder="Kullanıcı adı ara" value="{{ ar }}">
-                <button type="submit" class="search-button">Ara</button>
-            </form>
-
-           
-
-            <!-- Kullanıcı Listesi -->
+    <form action="{{ url_for('logout') }}" method="POST">
+        <button type="submit" class="cikis_buton">Çıkış Yap</button>
+    </form>
+    <h2>Broadcast Mesajı Gönder</h2>
+    <form id="broadcast-form">
+        <input type="text" id="broadcast-message" placeholder="Aktif kullanıcılara mesaj gönder">
+        <button type="submit">Gönder</button>
+    </form>
+    <form method="post" class="search-form">
+        <input type="text" name="sea" class="search-input" placeholder="Kullanıcı adı ara" value="{{ ar }}">
+        <button type="submit" class="search-button">Ara</button>
+    </form>
+    
             {% for kullanici in users %}
             <a href="{{ url_for('private_chat', target_user_id=kullanici.telefonNo, target_username=kullanici.ad) }}">
-                <li class="user-item">{{ kullanici.ad }}</li>
-            </a>
+                <li class="user-item">{{ kullanici.ad }} </li></a>
             {% endfor %}
-        </ul>
-    </div>
 
-    <!-- Kayıtlı Aramalar İçeriği -->
-    <div id="search-content" class="tab-content">
-        {% for sesliarama in sesli_Aramalar %}
-                <li class="user-item"> Arayan : {{ sesliarama.get("arayan") }} - Aranan : {{sesliarama.aranan}}
-                    <br>
-                    {%if sesliarama.startTime%}
-                        başlangıç :   {{sesliarama.startTime}}
-                    {%endif%}
-                    <br>
-                    {%if sesliarama.endTime%}
-                        bitiş :   {{sesliarama.endTime}}
-                    {%endif%}                    
-                </li>
-            {% endfor %}
-    </div>
-</div>
-
-<!-- Sekme Geçişi JavaScript -->
+</ul>
 <script>
-    // Sekme geçişi işlemleri
-    document.getElementById('home-tab').addEventListener('click', function() {
-        document.getElementById('home-content').classList.add('active');
-        document.getElementById('search-content').classList.remove('active');
-        document.getElementById('home-tab').classList.add('active');
-        document.getElementById('search-tab').classList.remove('active');
+    const socket = io();
+    document.getElementById('broadcast-form').addEventListener('submit', function(event) {
+    event.preventDefault();
+    const messageInput = document.getElementById('broadcast-message');
+    const message = messageInput.value;
+    if(message.trim()) {
+        socket.emit('broadcast_message', { message: message });
+        messageInput.value = ''; // Form temizleme
+    }
     });
-
-    document.getElementById('search-tab').addEventListener('click', function() {
-        document.getElementById('search-content').classList.add('active');
-        document.getElementById('home-content').classList.remove('active');
-        document.getElementById('search-tab').classList.add('active');
-        document.getElementById('home-tab').classList.remove('active');
-    });
+    socket.on('message',function(data) {
+        console.log('Message received: ', data);
+    })
+    
+    
 </script>
 {% endblock %}
